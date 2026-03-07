@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #0a0a0b;
+  color: #ffffff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #111113;
+}
+::-webkit-scrollbar-thumb {
+  background: #3d3d48;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  animation: backdropIn 0.2s ease-out;
+}
+
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  animation: modalIn 0.25s ease-out;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Input focus rings */
+.input-field {
+  @apply w-full bg-dark-700 border border-dark-400 rounded-lg px-4 py-2.5 text-sm text-white placeholder-dark-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all;
+}
+
+.select-field {
+  @apply w-full bg-dark-700 border border-dark-400 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all appearance-none cursor-pointer;
+}
+
+.btn-primary {
+  @apply bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-lg text-sm transition-all active:scale-95;
+}
+
+.btn-secondary {
+  @apply bg-dark-600 hover:bg-dark-500 text-white font-medium px-4 py-2.5 rounded-lg text-sm transition-all border border-dark-400;
+}
+
+.btn-danger {
+  @apply bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium px-4 py-2.5 rounded-lg text-sm transition-all border border-red-500/20;
+}
+
+.card {
+  @apply bg-dark-800 border border-dark-600 rounded-xl;
+}
+
+/* Recharts custom */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: #1a1a1e !important;
+  border: 1px solid #3d3d48 !important;
+  border-radius: 8px !important;
+}
