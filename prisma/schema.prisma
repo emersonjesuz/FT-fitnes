@@ -1,6 +1,5 @@
 generator client {
-    provider   = "prisma-client-js"
-    engineType = "binary"
+    provider = "prisma-client-js"
 }
 
 datasource db {
@@ -15,6 +14,7 @@ model User {
     createdAt DateTime  @default(now())
     students  Student[]
     workouts  Workout[]
+    lessons   Lesson[]
 
     @@schema("volei")
 }
@@ -29,10 +29,25 @@ model Student {
     peso          Float
     observacoes   String?
     historicoPeso Json?
+    senha         String?
     createdAt     DateTime @default(now())
 
-    user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-    workouts Workout[]
+    user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+    workouts   Workout[]
+    activities StudentActivity[]
+
+    @@index([userId])
+    @@schema("volei")
+}
+
+model Lesson {
+    id        String   @id
+    userId    String
+    nome      String
+    videoUrl  String
+    createdAt DateTime @default(now())
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@index([userId])
     @@schema("volei")
@@ -48,10 +63,39 @@ model Workout {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-    student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+    user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+    student    Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+    activities StudentActivity[]
 
     @@index([userId])
     @@index([studentId])
+    @@schema("volei")
+}
+
+model StudentActivity {
+    id                String    @id
+    alunoId           String
+    treinoId          String
+    tempoVisualizacao Int       @default(0)
+    concluido         Boolean   @default(false)
+    dataConclusao     DateTime?
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+
+    aluno  Student @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+    treino Workout @relation(fields: [treinoId], references: [id], onDelete: Cascade)
+
+    @@unique([alunoId, treinoId])
+    @@index([alunoId])
+    @@index([treinoId])
+    @@schema("volei")
+}
+
+model AdminUser {
+    id        String   @id
+    username  String   @unique
+    password  String
+    createdAt DateTime @default(now())
+
     @@schema("volei")
 }
