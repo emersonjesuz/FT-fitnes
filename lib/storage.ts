@@ -1,154 +1,181 @@
-import { User, Student, Workout } from '@/types'
+import { Student, User, Workout } from "@/types";
 
 const STORAGE_KEYS = {
-  users: 'pt_users',
-  students: 'pt_students',
-  workouts: 'pt_workouts',
-  currentUser: 'pt_current_user',
-}
+  users: "pt_users",
+  students: "pt_students",
+  workouts: "pt_workouts",
+  currentUser: "pt_current_user",
+  migratedFlag: "pt_db_migrated_v1",
+};
 
-function getItem<T>(key: string): T[] {
-  if (typeof window === 'undefined') return []
+let migrationPromise: Promise<void> | null = null;
+
+function getLocalArray<T>(key: string): T[] {
+  if (typeof window === "undefined") return [];
   try {
-    const data = localStorage.getItem(key)
-    return data ? JSON.parse(data) : []
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    return []
+    return [];
   }
 }
 
-function setItem<T>(key: string, data: T[]): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(key, JSON.stringify(data))
+async function ensureLocalStorageMigration(): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (localStorage.getItem(STORAGE_KEYS.migratedFlag) === "1") return;
+
+  if (migrationPromise) {
+    await migrationPromise;
+    return;
+  }
+
+  migrationPromise = (async () => {
+    const users = getLocalArray<User>(STORAGE_KEYS.users);
+    const students = getLocalArray<Student>(STORAGE_KEYS.students);
+    const workouts = getLocalArray<Workout>(STORAGE_KEYS.workouts);
+
+    if (users.length === 0 && students.length === 0 && workouts.length === 0) {
+      localStorage.setItem(STORAGE_KEYS.migratedFlag, "1");
+      return;
+    }
+
+    const response = await fetch("/api/migrate-localstorage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ users, students, workouts }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Falha ao migrar dados locais para o banco");
+    }
+
+    localStorage.setItem(STORAGE_KEYS.migratedFlag, "1");
+  })();
+
+  try {
+    await migrationPromise;
+  } finally {
+    migrationPromise = null;
+  }
+}
+
+async function apiGet<T>(url: string): Promise<T> {
+  await ensureLocalStorageMigration();
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Falha em GET ${url}`);
+  }
+  return response.json();
+}
+
+async function apiSend<T>(url: string, method: "POST" | "PUT" | "DELETE", body?: unknown): Promise<T> {
+  await ensureLocalStorageMigration();
+  const response = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha em ${method} ${url}`);
+  }
+
+  return response.json();
 }
 
 // Users
-export function getUsers(): User[] {
-  return getItem<User>(STORAGE_KEYS.users)
+export async function getUsers(): Promise<User[]> {
+  return apiGet<User[]>("/api/users");
 }
 
-export function saveUsers(users: User[]): void {
-  setItem(STORAGE_KEYS.users, users)
+export async function findUser(username: string): Promise<User | undefined> {
+  const query = encodeURIComponent(username.trim());
+  const user = await apiGet<User | null>(`/api/users?username=${query}`);
+  return user || undefined;
 }
 
-export function findUser(username: string): User | undefined {
-  return getUsers().find(u => u.username.toLowerCase() === username.toLowerCase())
-}
-
-export function createUser(username: string, password: string): User {
-  const users = getUsers()
-  const newUser: User = {
-    id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+export async function createUser(username: string, password: string): Promise<User> {
+  return apiSend<User>("/api/users", "POST", {
     username,
     password,
     createdAt: new Date().toISOString(),
-  }
-  users.push(newUser)
-  saveUsers(users)
-  return newUser
+  });
 }
 
 // Current session
 export function setCurrentUser(user: User): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(user))
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(user));
 }
 
 export function getCurrentUser(): User | null {
-  if (typeof window === 'undefined') return null
+  if (typeof window === "undefined") return null;
   try {
-    const data = localStorage.getItem(STORAGE_KEYS.currentUser)
-    return data ? JSON.parse(data) : null
+    const data = localStorage.getItem(STORAGE_KEYS.currentUser);
+    return data ? JSON.parse(data) : null;
   } catch {
-    return null
+    return null;
   }
 }
 
 export function logout(): void {
-  if (typeof window === 'undefined') return
-  localStorage.removeItem(STORAGE_KEYS.currentUser)
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(STORAGE_KEYS.currentUser);
 }
 
 // Students
-export function getStudents(userId: string): Student[] {
-  return getItem<Student>(STORAGE_KEYS.students).filter(s => s.userId === userId)
+export async function getStudents(userId: string): Promise<Student[]> {
+  const query = encodeURIComponent(userId);
+  return apiGet<Student[]>(`/api/students?userId=${query}`);
 }
 
-export function getAllStudents(): Student[] {
-  return getItem<Student>(STORAGE_KEYS.students)
+export async function saveStudent(student: Student): Promise<Student> {
+  return apiSend<Student>(`/api/students/${student.id}`, "PUT", student);
 }
 
-export function saveStudent(student: Student): void {
-  const students = getAllStudents()
-  const idx = students.findIndex(s => s.id === student.id)
-  if (idx >= 0) {
-    students[idx] = student
-  } else {
-    students.push(student)
-  }
-  setItem(STORAGE_KEYS.students, students)
+export async function deleteStudent(id: string): Promise<void> {
+  await apiSend<{ ok: boolean }>(`/api/students/${id}`, "DELETE");
 }
 
-export function deleteStudent(id: string): void {
-  const students = getAllStudents().filter(s => s.id !== id)
-  setItem(STORAGE_KEYS.students, students)
-  // Also delete workouts for this student
-  const workouts = getAllWorkouts().filter(w => w.studentId !== id)
-  setItem(STORAGE_KEYS.workouts, workouts)
-}
-
-export function createStudent(userId: string, data: Omit<Student, 'id' | 'userId' | 'createdAt'>): Student {
-  const student: Student = {
+export async function createStudent(userId: string, data: Omit<Student, "id" | "userId" | "createdAt">): Promise<Student> {
+  return apiSend<Student>("/api/students", "POST", {
     ...data,
-    id: `student_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     userId,
     createdAt: new Date().toISOString(),
-  }
-  saveStudent(student)
-  return student
+  });
 }
 
 // Workouts
-export function getAllWorkouts(): Workout[] {
-  return getItem<Workout>(STORAGE_KEYS.workouts)
+export async function getWorkouts(userId: string): Promise<Workout[]> {
+  const query = encodeURIComponent(userId);
+  return apiGet<Workout[]>(`/api/workouts?userId=${query}`);
 }
 
-export function getWorkouts(userId: string): Workout[] {
-  return getAllWorkouts().filter(w => w.userId === userId)
+export async function getStudentWorkouts(userId: string, studentId: string): Promise<Workout[]> {
+  const all = await getWorkouts(userId);
+  return all.filter((w) => w.studentId === studentId);
 }
 
-export function getStudentWorkouts(userId: string, studentId: string): Workout[] {
-  return getAllWorkouts().filter(w => w.userId === userId && w.studentId === studentId)
+export async function saveWorkout(workout: Workout): Promise<Workout> {
+  return apiSend<Workout>(`/api/workouts/${workout.id}`, "PUT", workout);
 }
 
-export function saveWorkout(workout: Workout): void {
-  const workouts = getAllWorkouts()
-  const idx = workouts.findIndex(w => w.id === workout.id)
-  if (idx >= 0) {
-    workouts[idx] = workout
-  } else {
-    workouts.push(workout)
-  }
-  setItem(STORAGE_KEYS.workouts, workouts)
+export async function deleteWorkout(id: string): Promise<void> {
+  await apiSend<{ ok: boolean }>(`/api/workouts/${id}`, "DELETE");
 }
 
-export function deleteWorkout(id: string): void {
-  const workouts = getAllWorkouts().filter(w => w.id !== id)
-  setItem(STORAGE_KEYS.workouts, workouts)
-}
-
-export function createWorkout(userId: string, data: Omit<Workout, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Workout {
-  const workout: Workout = {
+export async function createWorkout(
+  userId: string,
+  data: Omit<Workout, "id" | "userId" | "createdAt" | "updatedAt">,
+): Promise<Workout> {
+  return apiSend<Workout>("/api/workouts", "POST", {
     ...data,
-    id: `workout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     userId,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-  }
-  saveWorkout(workout)
-  return workout
+  });
 }
 
-export function updateWorkout(workout: Workout): void {
-  saveWorkout({ ...workout, updatedAt: new Date().toISOString() })
+export async function updateWorkout(workout: Workout): Promise<Workout> {
+  return saveWorkout({ ...workout, updatedAt: new Date().toISOString() });
 }

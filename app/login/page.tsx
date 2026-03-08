@@ -1,55 +1,55 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { findUser, createUser, setCurrentUser, getCurrentUser } from '@/lib/storage'
-import { Dumbbell, Eye, EyeOff, Zap } from 'lucide-react'
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { findUser, createUser, setCurrentUser, getCurrentUser } from "@/lib/storage";
+import { Dumbbell, Eye, EyeOff, Zap } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'info' | 'error' | 'success'; text: string } | null>(null)
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: "info" | "error" | "success"; text: string } | null>(null);
 
   useEffect(() => {
-    const user = getCurrentUser()
-    if (user) router.push('/dashboard')
-  }, [router])
+    const user = getCurrentUser();
+    if (user) router.push("/dashboard");
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      setMessage({ type: 'error', text: 'Preencha todos os campos.' })
-      return
+      setMessage({ type: "error", text: "Preencha todos os campos." });
+      return;
     }
 
-    setLoading(true)
-    setMessage(null)
+    setLoading(true);
+    setMessage(null);
 
-    await new Promise(r => setTimeout(r, 600))
+    await new Promise((r) => setTimeout(r, 600));
 
-    const existing = findUser(username)
+    const existing = await findUser(username);
 
     if (existing) {
       if (existing.password !== password) {
-        setMessage({ type: 'error', text: 'Senha incorreta. Tente novamente.' })
-        setLoading(false)
-        return
+        setMessage({ type: "error", text: "Senha incorreta. Tente novamente." });
+        setLoading(false);
+        return;
       }
-      setCurrentUser(existing)
-      setMessage({ type: 'success', text: 'Bem-vindo de volta!' })
+      setCurrentUser(existing);
+      setMessage({ type: "success", text: "Bem-vindo de volta!" });
     } else {
-      setMessage({ type: 'info', text: 'Usuário novo detectado. Criando conta automaticamente...' })
-      await new Promise(r => setTimeout(r, 800))
-      const newUser = createUser(username, password)
-      setCurrentUser(newUser)
-      setMessage({ type: 'success', text: 'Conta criada com sucesso!' })
+      setMessage({ type: "info", text: "Usuário novo detectado. Criando conta automaticamente..." });
+      await new Promise((r) => setTimeout(r, 800));
+      const newUser = await createUser(username, password);
+      setCurrentUser(newUser);
+      setMessage({ type: "success", text: "Conta criada com sucesso!" });
     }
 
-    await new Promise(r => setTimeout(r, 500))
-    router.push('/dashboard')
-  }
+    await new Promise((r) => setTimeout(r, 500));
+    router.push("/dashboard");
+  };
 
   return (
     <div className="min-h-screen bg-dark-900 flex overflow-hidden">
@@ -59,8 +59,12 @@ export default function LoginPage() {
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-0 left-0 w-96 h-96 bg-brand-500/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-brand-600/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-          <div className="absolute inset-0 opacity-[0.03]"
-            style={{ backgroundImage: 'repeating-linear-gradient(45deg, #f97316 0, #f97316 1px, transparent 0, transparent 50%)', backgroundSize: '20px 20px' }}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: "repeating-linear-gradient(45deg, #f97316 0, #f97316 1px, transparent 0, transparent 50%)",
+              backgroundSize: "20px 20px",
+            }}
           />
         </div>
 
@@ -77,10 +81,10 @@ export default function LoginPage() {
 
           <div className="mt-12 grid grid-cols-3 gap-4">
             {[
-              { label: 'Alunos', desc: 'Gerencie perfis completos' },
-              { label: 'Treinos', desc: 'Monte fichas detalhadas' },
-              { label: 'Métricas', desc: 'Acompanhe evolução' },
-            ].map(f => (
+              { label: "Alunos", desc: "Gerencie perfis completos" },
+              { label: "Treinos", desc: "Monte fichas detalhadas" },
+              { label: "Métricas", desc: "Acompanhe evolução" },
+            ].map((f) => (
               <div key={f.label} className="bg-dark-700/50 border border-dark-500/50 rounded-xl p-4 text-left">
                 <Zap className="w-5 h-5 text-brand-400 mb-2" />
                 <p className="font-display font-semibold text-sm text-white">{f.label}</p>
@@ -99,7 +103,9 @@ export default function LoginPage() {
             <div className="w-10 h-10 bg-brand-500/20 rounded-xl flex items-center justify-center">
               <Dumbbell className="w-5 h-5 text-brand-400" />
             </div>
-            <span className="font-display text-2xl font-bold">PT<span className="text-brand-500">Pro</span></span>
+            <span className="font-display text-2xl font-bold">
+              PT<span className="text-brand-500">Pro</span>
+            </span>
           </div>
 
           <div className="mb-8">
@@ -115,7 +121,7 @@ export default function LoginPage() {
                 className="input-field"
                 placeholder="seu.usuario"
                 value={username}
-                onChange={e => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
               />
             </div>
@@ -124,11 +130,11 @@ export default function LoginPage() {
               <label className="block text-xs font-medium text-dark-100 mb-1.5 uppercase tracking-wider">Senha</label>
               <div className="relative">
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   className="input-field pr-10"
                   placeholder="••••••••"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                 />
                 <button
@@ -142,11 +148,15 @@ export default function LoginPage() {
             </div>
 
             {message && (
-              <div className={`rounded-lg px-4 py-3 text-sm animate-slide-up ${
-                message.type === 'error' ? 'bg-red-500/10 border border-red-500/20 text-red-400' :
-                message.type === 'success' ? 'bg-green-500/10 border border-green-500/20 text-green-400' :
-                'bg-brand-500/10 border border-brand-500/20 text-brand-400'
-              }`}>
+              <div
+                className={`rounded-lg px-4 py-3 text-sm animate-slide-up ${
+                  message.type === "error"
+                    ? "bg-red-500/10 border border-red-500/20 text-red-400"
+                    : message.type === "success"
+                      ? "bg-green-500/10 border border-green-500/20 text-green-400"
+                      : "bg-brand-500/10 border border-brand-500/20 text-brand-400"
+                }`}
+              >
                 {message.text}
               </div>
             )}
@@ -161,7 +171,9 @@ export default function LoginPage() {
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Aguarde...
                 </>
-              ) : 'Acessar sistema'}
+              ) : (
+                "Acessar sistema"
+              )}
             </button>
           </form>
 
@@ -171,5 +183,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

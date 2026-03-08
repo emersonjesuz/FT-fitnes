@@ -1,0 +1,57 @@
+generator client {
+    provider   = "prisma-client-js"
+    engineType = "binary"
+}
+
+datasource db {
+    provider = "postgresql"
+    schemas  = ["volei"]
+}
+
+model User {
+    id        String    @id
+    username  String    @unique
+    password  String
+    createdAt DateTime  @default(now())
+    students  Student[]
+    workouts  Workout[]
+
+    @@schema("volei")
+}
+
+model Student {
+    id            String   @id
+    userId        String
+    nome          String
+    biotipo       String
+    idade         Int
+    altura        Float
+    peso          Float
+    observacoes   String?
+    historicoPeso Json?
+    createdAt     DateTime @default(now())
+
+    user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    workouts Workout[]
+
+    @@index([userId])
+    @@schema("volei")
+}
+
+model Workout {
+    id        String   @id
+    userId    String
+    studentId String
+    objetivo  String
+    nivel     String
+    dias      Json
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@index([studentId])
+    @@schema("volei")
+}

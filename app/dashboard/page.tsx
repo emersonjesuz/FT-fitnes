@@ -1,83 +1,122 @@
-'use client'
-import { useEffect, useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { getStudents, getWorkouts } from '@/lib/storage'
-import { Student, Workout } from '@/types'
-import Sidebar from '@/components/layout/Sidebar'
-import { Users, Dumbbell, TrendingUp, Award, Plus } from 'lucide-react'
-import Link from 'next/link'
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
-} from 'recharts'
+"use client";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { getStudents, getWorkouts } from "@/lib/storage";
+import { Student, Workout } from "@/types";
+import Sidebar from "@/components/layout/Sidebar";
+import { Users, Dumbbell, TrendingUp, Award, Plus } from "lucide-react";
+import Link from "next/link";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
-const COLORS = ['#f97316', '#fb923c', '#fdba74', '#ea580c', '#c2410c', '#9a3412']
+const COLORS = ["#f97316", "#fb923c", "#fdba74", "#ea580c", "#c2410c", "#9a3412"];
 
 const NIVEL_COLORS: Record<string, string> = {
-  'Iniciante': '#22c55e',
-  'Intermediário': '#f97316',
-  'Avançado': '#ef4444',
-}
+  Iniciante: "#22c55e",
+  Intermediário: "#f97316",
+  Avançado: "#ef4444",
+};
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-xs">
         <p className="text-white font-medium">{label}</p>
-        <p className="text-brand-400">{payload[0].value} {payload[0].value === 1 ? 'item' : 'itens'}</p>
+        <p className="text-brand-400">
+          {payload[0].value} {payload[0].value === 1 ? "item" : "itens"}
+        </p>
       </div>
-    )
+    );
   }
-  return null
-}
+  return null;
+};
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth()
-  const [students, setStudents] = useState<Student[]>([])
-  const [workouts, setWorkouts] = useState<Workout[]>([])
+  const { user, loading } = useAuth();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
 
   useEffect(() => {
-    if (user) {
-      setStudents(getStudents(user.id))
-      setWorkouts(getWorkouts(user.id))
-    }
-  }, [user])
+    if (!user) return;
 
-  if (loading) return <div className="min-h-screen bg-dark-900 flex items-center justify-center"><span className="w-8 h-8 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" /></div>
+    const load = async () => {
+      const [loadedStudents, loadedWorkouts] = await Promise.all([getStudents(user.id), getWorkouts(user.id)]);
+      setStudents(loadedStudents);
+      setWorkouts(loadedWorkouts);
+    };
 
-  const isEmpty = students.length === 0 && workouts.length === 0
+    load();
+  }, [user]);
+
+  if (loading)
+    return (
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+        <span className="w-8 h-8 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
+      </div>
+    );
+
+  const isEmpty = students.length === 0 && workouts.length === 0;
 
   // Chart data
-  const biotipoData = ['Ectomorfo', 'Mesomorfo', 'Endomorfo'].map(b => ({
-    name: b,
-    value: students.filter(s => s.biotipo === b).length
-  })).filter(d => d.value > 0)
+  const biotipoData = ["Ectomorfo", "Mesomorfo", "Endomorfo"]
+    .map((b) => ({
+      name: b,
+      value: students.filter((s) => s.biotipo === b).length,
+    }))
+    .filter((d) => d.value > 0);
 
-  const objetivoData = ['Hipertrofia', 'Emagrecimento', 'Condicionamento', 'Força', 'Resistência', 'Reabilitação'].map(o => ({
-    name: o,
-    value: workouts.filter(w => w.objetivo === o).length
-  })).filter(d => d.value > 0)
+  const objetivoData = ["Hipertrofia", "Emagrecimento", "Condicionamento", "Força", "Resistência", "Reabilitação"]
+    .map((o) => ({
+      name: o,
+      value: workouts.filter((w) => w.objetivo === o).length,
+    }))
+    .filter((d) => d.value > 0);
 
-  const nivelData = ['Iniciante', 'Intermediário', 'Avançado'].map(n => ({
-    name: n,
-    value: workouts.filter(w => w.nivel === n).length
-  })).filter(d => d.value > 0)
+  const nivelData = ["Iniciante", "Intermediário", "Avançado"]
+    .map((n) => ({
+      name: n,
+      value: workouts.filter((w) => w.nivel === n).length,
+    }))
+    .filter((d) => d.value > 0);
 
   // Students workout count
   const topStudents = students
-    .map(s => ({
-      name: s.nome.split(' ')[0],
-      treinos: workouts.filter(w => w.studentId === s.id).length
+    .map((s) => ({
+      name: s.nome.split(" ")[0],
+      treinos: workouts.filter((w) => w.studentId === s.id).length,
     }))
     .sort((a, b) => b.treinos - a.treinos)
-    .slice(0, 6)
+    .slice(0, 6);
 
   const stats = [
-    { label: 'Total de Alunos', value: students.length, icon: Users, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
-    { label: 'Total de Treinos', value: workouts.length, icon: Dumbbell, color: 'text-brand-400', bg: 'bg-brand-500/10 border-brand-500/20' },
-    { label: 'Média de Treinos/Aluno', value: students.length ? (workouts.length / students.length).toFixed(1) : 0, icon: TrendingUp, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' },
-    { label: 'Alunos Avançados', value: workouts.filter(w => w.nivel === 'Avançado').length, icon: Award, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' },
-  ]
+    {
+      label: "Total de Alunos",
+      value: students.length,
+      icon: Users,
+      color: "text-blue-400",
+      bg: "bg-blue-500/10 border-blue-500/20",
+    },
+    {
+      label: "Total de Treinos",
+      value: workouts.length,
+      icon: Dumbbell,
+      color: "text-brand-400",
+      bg: "bg-brand-500/10 border-brand-500/20",
+    },
+    {
+      label: "Média de Treinos/Aluno",
+      value: students.length ? (workouts.length / students.length).toFixed(1) : 0,
+      icon: TrendingUp,
+      color: "text-green-400",
+      bg: "bg-green-500/10 border-green-500/20",
+    },
+    {
+      label: "Alunos Avançados",
+      value: workouts.filter((w) => w.nivel === "Avançado").length,
+      icon: Award,
+      color: "text-purple-400",
+      bg: "bg-purple-500/10 border-purple-500/20",
+    },
+  ];
 
   return (
     <div className="flex min-h-screen bg-dark-900">
@@ -97,7 +136,8 @@ export default function DashboardPage() {
             </div>
             <h2 className="font-display text-2xl font-bold text-white mb-3">Comece sua jornada</h2>
             <p className="text-dark-200 max-w-md mb-8 leading-relaxed">
-              Você ainda não cadastrou alunos ou treinos. Comece adicionando seu primeiro aluno e criando fichas de treino personalizadas.
+              Você ainda não cadastrou alunos ou treinos. Comece adicionando seu primeiro aluno e criando fichas de treino
+              personalizadas.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/students" className="btn-primary flex items-center gap-2">
@@ -114,7 +154,7 @@ export default function DashboardPage() {
           <>
             {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {stats.map(stat => (
+              {stats.map((stat) => (
                 <div key={stat.label} className={`card p-4 border ${stat.bg}`}>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-dark-200 font-medium">{stat.label}</p>
@@ -133,9 +173,9 @@ export default function DashboardPage() {
                   <h3 className="font-display font-semibold text-white mb-4">Treinos por Objetivo</h3>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={objetivoData} barSize={24}>
-                      <XAxis dataKey="name" tick={{ fill: '#71717f', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: '#71717f', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: '#ffffff08' }} />
+                      <XAxis dataKey="name" tick={{ fill: "#71717f", fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: "#71717f", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: "#ffffff08" }} />
                       <Bar dataKey="value" fill="#f97316" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -148,8 +188,19 @@ export default function DashboardPage() {
                   <h3 className="font-display font-semibold text-white mb-4">Alunos por Biotipo</h3>
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={biotipoData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                        {biotipoData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      <Pie
+                        data={biotipoData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={false}
+                      >
+                        {biotipoData.map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
                       </Pie>
                       <Tooltip content={<CustomTooltip />} />
                     </PieChart>
@@ -162,20 +213,25 @@ export default function DashboardPage() {
                 <div className="card p-6">
                   <h3 className="font-display font-semibold text-white mb-4">Treinos por Nível</h3>
                   <div className="space-y-3">
-                    {['Iniciante', 'Intermediário', 'Avançado'].map(nivel => {
-                      const count = workouts.filter(w => w.nivel === nivel).length
-                      const pct = workouts.length ? (count / workouts.length) * 100 : 0
+                    {["Iniciante", "Intermediário", "Avançado"].map((nivel) => {
+                      const count = workouts.filter((w) => w.nivel === nivel).length;
+                      const pct = workouts.length ? (count / workouts.length) * 100 : 0;
                       return (
                         <div key={nivel}>
                           <div className="flex justify-between text-sm mb-1.5">
                             <span className="text-dark-100">{nivel}</span>
-                            <span className="font-medium" style={{ color: NIVEL_COLORS[nivel] }}>{count}</span>
+                            <span className="font-medium" style={{ color: NIVEL_COLORS[nivel] }}>
+                              {count}
+                            </span>
                           </div>
                           <div className="h-2 bg-dark-600 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: NIVEL_COLORS[nivel] }} />
+                            <div
+                              className="h-full rounded-full transition-all duration-700"
+                              style={{ width: `${pct}%`, backgroundColor: NIVEL_COLORS[nivel] }}
+                            />
                           </div>
                         </div>
-                      )
+                      );
                     })}
                   </div>
                 </div>
@@ -187,9 +243,22 @@ export default function DashboardPage() {
                   <h3 className="font-display font-semibold text-white mb-4">Treinos por Aluno</h3>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={topStudents} barSize={24} layout="vertical">
-                      <XAxis type="number" tick={{ fill: '#71717f', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                      <YAxis dataKey="name" type="category" tick={{ fill: '#a1a1af', fontSize: 12 }} axisLine={false} tickLine={false} width={60} />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: '#ffffff08' }} />
+                      <XAxis
+                        type="number"
+                        tick={{ fill: "#71717f", fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        tick={{ fill: "#a1a1af", fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={60}
+                      />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: "#ffffff08" }} />
                       <Bar dataKey="treinos" fill="#ea580c" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -200,5 +269,5 @@ export default function DashboardPage() {
         )}
       </main>
     </div>
-  )
+  );
 }

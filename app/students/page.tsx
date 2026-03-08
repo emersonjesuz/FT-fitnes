@@ -18,7 +18,7 @@ interface StudentModalProps {
   student?: Student | null;
   userId: string;
   onClose: () => void;
-  onSave: () => void;
+  onSave: () => Promise<void>;
 }
 
 function StudentModal({ student, userId, onClose, onSave }: StudentModalProps) {
@@ -41,7 +41,7 @@ function StudentModal({ student, userId, onClose, onSave }: StudentModalProps) {
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) {
@@ -65,11 +65,11 @@ function StudentModal({ student, userId, onClose, onSave }: StudentModalProps) {
       if (+form.peso !== student.peso) {
         historico.push({ data: new Date().toISOString(), peso: +form.peso });
       }
-      saveStudent({ ...student, ...data, historicoPeso: historico });
+      await saveStudent({ ...student, ...data, historicoPeso: historico });
     } else {
-      createStudent(userId, data);
+      await createStudent(userId, data);
     }
-    onSave();
+    await onSave();
     onClose();
   };
 
@@ -173,16 +173,17 @@ function WeightChart({ student }: { student: Student }) {
 export default function StudentsPage() {
   const { user, loading } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
-  const [workouts, setWorkouts] = useState<ReturnType<typeof getWorkouts>>([]);
+  const [workouts, setWorkouts] = useState<Awaited<ReturnType<typeof getWorkouts>>>([]);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const load = () => {
+  const load = async () => {
     if (user) {
-      setStudents(getStudents(user.id));
-      setWorkouts(getWorkouts(user.id));
+      const [loadedStudents, loadedWorkouts] = await Promise.all([getStudents(user.id), getWorkouts(user.id)]);
+      setStudents(loadedStudents);
+      setWorkouts(loadedWorkouts);
     }
   };
 
@@ -199,10 +200,10 @@ export default function StudentsPage() {
 
   const filtered = students.filter((s) => s.nome.toLowerCase().includes(search.toLowerCase()));
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Excluir este aluno? Todos os treinos associados também serão removidos.")) {
-      deleteStudent(id);
-      load();
+      await deleteStudent(id);
+      await load();
     }
   };
 

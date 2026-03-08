@@ -30,3 +30,9 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+/lib/generated/prisma
+
+/lib/generated/prisma
+
+.env
