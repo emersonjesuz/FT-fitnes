@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Dumbbell, LayoutDashboard, Users, ClipboardList, LogOut, X, Menu } from 'lucide-react'
+import { Dumbbell, LayoutDashboard, Users, ClipboardList, LogOut, X, Menu, PlaySquare } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import clsx from 'clsx'
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard },
   { href: '/students', label: 'Alunos', icon: Users },
   { href: '/workouts', label: 'Treinos', icon: ClipboardList },
+  { href: '/lessons', label: 'Aulas', icon: PlaySquare },
 ]
 
 export default function Sidebar() {

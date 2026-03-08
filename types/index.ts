@@ -15,6 +15,15 @@ export interface Student {
   peso: number
   observacoes?: string
   historicoPeso?: { data: string; peso: number }[]
+  senha?: string
+  createdAt: string
+}
+
+export interface Lesson {
+  id: string
+  userId: string
+  nome: string
+  videoUrl: string
   createdAt: string
 }
 
@@ -25,11 +34,15 @@ export interface Exercise {
   series: string
   peso: string
   descricao?: string
+  aulaId?: string
+  aulaUrl?: string
+  aulaNome?: string
 }
 
 export interface WorkoutDay {
   id: string
   diaSemana: string
+  descricaoDia?: string
   exercises: Exercise[]
 }
 
@@ -40,6 +53,17 @@ export interface Workout {
   objetivo: 'Hipertrofia' | 'Emagrecimento' | 'Condicionamento' | 'Força' | 'Resistência' | 'Reabilitação'
   nivel: 'Iniciante' | 'Intermediário' | 'Avançado'
   dias: WorkoutDay[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface StudentActivity {
+  id: string
+  alunoId: string
+  treinoId: string
+  tempoVisualizacao: number
+  concluido: boolean
+  dataConclusao?: string
   createdAt: string
   updatedAt: string
 }

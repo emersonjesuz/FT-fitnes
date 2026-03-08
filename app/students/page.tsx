@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getStudents, deleteStudent, createStudent, saveStudent, getWorkouts } from "@/lib/storage";
 import { Student } from "@/types";
 import Sidebar from "@/components/layout/Sidebar";
-import { Plus, Search, Edit2, Trash2, User, TrendingUp, X, ChevronDown } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, User, TrendingUp, X, ChevronDown, Eye, EyeOff, Copy, Check } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const BIOTIPOS = ["Ectomorfo", "Mesomorfo", "Endomorfo"] as const;
@@ -13,6 +13,32 @@ const NIVEL_BADGE: Record<string, string> = {
   Intermediário: "bg-brand-500/15 text-brand-400 border-brand-500/20",
   Avançado: "bg-red-500/15 text-red-400 border-red-500/20",
 };
+
+function CopyLinkButton({ userId, studentId }: { userId: string; studentId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = () => {
+    const url = `${window.location.origin}/personal/${userId}/aluno/${studentId}/login`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <button
+      onClick={copyLink}
+      className={`mt-3 w-full py-1.5 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+        copied
+          ? "bg-green-500/15 text-green-400 border-green-500/20"
+          : "bg-dark-700/60 text-dark-300 border-dark-600 hover:text-brand-400 hover:border-brand-500/30"
+      }`}
+    >
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+      {copied ? "Link copiado!" : "Copiar link de acesso"}
+    </button>
+  );
+}
 
 interface StudentModalProps {
   student?: Student | null;
@@ -29,7 +55,9 @@ function StudentModal({ student, userId, onClose, onSave }: StudentModalProps) {
     altura: student?.altura?.toString() || "",
     peso: student?.peso?.toString() || "",
     observacoes: student?.observacoes || "",
+    senha: "",
   });
+  const [showSenha, setShowSenha] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -57,6 +85,7 @@ function StudentModal({ student, userId, onClose, onSave }: StudentModalProps) {
       peso: +form.peso,
       observacoes: form.observacoes.trim(),
       historicoPeso: student?.historicoPeso || [{ data: new Date().toISOString(), peso: +form.peso }],
+      ...(form.senha.trim() ? { senha: form.senha.trim() } : {}),
     };
 
     if (student) {
@@ -137,6 +166,31 @@ function StudentModal({ student, userId, onClose, onSave }: StudentModalProps) {
               value={form.observacoes}
               onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
             />
+          </div>
+          {/* Campo senha para login do aluno */}
+          <div>
+            <label className="block text-xs font-medium text-dark-100 mb-1.5 uppercase tracking-wider">
+              Senha de Acesso do Aluno
+            </label>
+            <div className="relative">
+              <input
+                type={showSenha ? "text" : "password"}
+                className="input-field pr-10"
+                placeholder={student ? "Deixe em branco para não alterar" : "Crie uma senha para o aluno acessar"}
+                value={form.senha}
+                onChange={(e) => setForm((f) => ({ ...f, senha: e.target.value }))}
+              />
+              <button
+                type="button"
+                onClick={() => setShowSenha(!showSenha)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-300 hover:text-white transition-colors"
+              >
+                {showSenha ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+            <p className="text-dark-400 text-xs mt-1">
+              Esta senha será informada ao aluno para acessar seus treinos.
+            </p>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">
@@ -310,6 +364,9 @@ export default function StudentsPage() {
                         <span className="text-xs text-dark-300 italic truncate max-w-[140px]">{student.observacoes}</span>
                       )}
                     </div>
+
+                    {/* Link de acesso do aluno */}
+                    <CopyLinkButton userId={user!.id} studentId={student.id} />
                   </div>
 
                   {/* Expand weight chart */}
